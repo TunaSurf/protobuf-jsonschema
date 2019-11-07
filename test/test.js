@@ -15,4 +15,8 @@ describe('protobuf-jsonschema', function() {
       }
     });
   });
+
+  it('should import file from relative directory', function() {
+    assert.deepEqual(compile(__dirname + '/dirTest1/test.proto'), require('./test.json'));
+  });
 });
