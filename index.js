@@ -14,7 +14,7 @@ Compiler.prototype.open = function(filename) {
     filename += '.proto';
   }
 
-  var schema = parseSchema(fs.readFileSync(filename, 'utf-8'));
+  var schema = parseSchema(fs.readFileSync(path.resolve(process.cwd(), i), 'utf-8'));
   this.visit(schema, schema.package || '');
   
   schema.imports.forEach(function(i) {
