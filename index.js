@@ -3,25 +3,28 @@ var primitive = require('./types');
 var fs = require('fs');
 var path = require('path');
 
-function Compiler(filename) {
+function Compiler(rootDir, filename) {
+  this.rootDir = rootDir;
   this.messages = {};
   this.enums = {};
   this.schema = this.open(filename);
 }
 
 Compiler.prototype.open = function(filename) {
-  if (!/\.proto$/i.test(filename) && !fs.existsSync(filename)) {
-    filename += '.proto';
+  let file = path.join(this.rootDir, filename);
+
+  if (!/\.proto$/i.test(file) && !fs.existsSync(file)) {
+    file += '.proto';
   }
 
-  var schema = parseSchema(fs.readFileSync(filename, 'utf-8'));
+  var schema = parseSchema(fs.readFileSync(file, 'utf-8'));
   this.visit(schema, schema.package || '');
   
   schema.imports.forEach(function(i) {
     try {
-      this.open(path.resolve(path.dirname(filename), i));
+      this.open(i);
     } catch (e) {
-      this.open(path.resolve(process.cwd(), i));
+      console.error("Error opening import: " + e);
     }
   }, this);
   
@@ -54,7 +57,7 @@ Compiler.prototype.visit = function(schema, prefix) {
  * compiles just that type and its dependencies. Otherwise,
  * compiles all types in the file.
  */
-Compiler.prototype.compile = function(type) {
+Compiler.prototype.compile = function(type = undefined) {
   this.root = {
     definitions: {},
     used: {}
@@ -122,7 +125,11 @@ Compiler.prototype.resolve = function(type, from, base, key) {
     }
   }
   
-  throw new Error('Could not resolve ' + type);
+  // throw new Error('Could not resolve ' + type);
+  const fileName = type.split('.').join('/');
+  const customType = new Compiler(this.rootDir, fileName);
+
+  return customType.compile();
 };
 
 /**
@@ -192,7 +199,8 @@ Compiler.prototype.compileMessage = function(message, root) {
   return res;
 };
 
-module.exports = function(filename, model) {
-  var compiler = new Compiler(filename);
-  return compiler.compile(model);
+module.exports = function(rootDir, filename) {
+  var compiler = new Compiler(rootDir, filename);
+  
+  return compiler.compile();
 };
