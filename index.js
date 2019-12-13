@@ -15,7 +15,6 @@ Compiler.prototype.open = function(filename) {
   }
 
   var schema = parseSchema(fs.readFileSync(filename, 'utf-8'));
-
   this.visit(schema, schema.package || '');
   
   schema.imports.forEach(function(i) {
@@ -55,7 +54,7 @@ Compiler.prototype.visit = function(schema, prefix) {
  * compiles just that type and its dependencies. Otherwise,
  * compiles all types in the file.
  */
-Compiler.prototype.compile = function(type = undefined) {
+Compiler.prototype.compile = function(type) {
   this.root = {
     definitions: {},
     used: {}
@@ -82,12 +81,10 @@ Compiler.prototype.compile = function(type = undefined) {
  * Returns a compiled JSON schema.
  */
 Compiler.prototype.resolve = function(type, from, base, key) {
-  if (primitive[type]) {
+  if (primitive[type])
     return primitive[type];
-  } 
   
   var lookup = from.split('.');
-
   for (var i = lookup.length; i >= 0; i--) {
     var id = lookup.slice(0, i).concat(type).join('.');
   
@@ -125,11 +122,7 @@ Compiler.prototype.resolve = function(type, from, base, key) {
     }
   }
   
-  // If type is not found, assume it is custom and recursively parse
-  const path = `/usr/include${type.split('.').join('/')}`;
-  const customType = new Compiler(path)
-  
-  return customType.compile()
+  throw new Error('Could not resolve ' + type);
 };
 
 /**
